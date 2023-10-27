@@ -185,7 +185,9 @@ int main(int argc, char *argv[]) {
             IntRange OnlyTwo(2, 2);
             DegreeConstraint dc(g, &ZeroOrTwo);
             dc.setConstraint("center", &OnlyTwo);
-            dd = DdStructure<2>(zddIntersection(fbs,dc));
+            dd = DdStructure<2>(dc);
+            dd.zddReduce();
+            dd.zddSubset(fbs);
             dd.zddReduce();
 
             val = std::vector<int>(dd.topLevel() + 1, 1);      // v(e) = 1 for all e \in E
@@ -208,13 +210,13 @@ int main(int argc, char *argv[]) {
 
         // Print moments
         if (opt["moment"]) {
-            std::vector<long long> moments = dd.evaluate(MomentsEval<long long,int>(val, optNum["moment"]));
-            mh << "Cardinality = " << moments.front() << "\n";
+            std::vector<__int128_t> moments = dd.evaluate(MomentsEval<__int128_t,int>(val, optNum["moment"]));
+            mh << "Cardinality = " << static_cast<long long>(moments.front()) << "\n";
             std::map<int,std::string> suffix = {{1,"st"}, {2,"nd"}, {3,"rd"}};
             for (int n = 1; n <= optNum["moment"]; ++n) {
                 if (suffix.count(n) == 0) suffix[n] = "th";
-                mh << n << suffix[n] << " moment = " 
-                    << std::fixed << std::setprecision(5) << (long double) moments[n] / moments.front() << "\n";
+                mh << n << suffix[n] << " moment = " << std::fixed << std::setprecision(5) 
+                    << static_cast<long double>(moments[n]) / static_cast<long double>(moments.front()) << "\n";
             }
         }
 
