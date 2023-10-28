@@ -15,9 +15,9 @@
 #include <tdzdd/eval/ToZBDD.hpp>
 
 #include <tdzdd/util/Graph.hpp>
+#include <tdzdd/spec/PathZdd.hpp>
 #include <tdzdd/util/IntSubset.hpp>
 #include <tdzdd/spec/DegreeConstraint.hpp>
-#include <tdzdd/spec/FrontierBasedSearch.hpp>
 
 // Utility files
 #include "MomentsEval.hpp"
@@ -155,7 +155,7 @@ int main(int argc, char *argv[]) {
             std::cin >> n >> w;
             if (n <= 0 || w < 0) throw std::runtime_error("Invalid inputs");
             
-            srand((unsigned) time(NULL));
+            srand(time(0));
             std::vector<int> weights;
             for (int i = 0; i < n + 1; ++i) {
                 weights.push_back(rand() % 10 + 1); // w(x) ~ U{1,10} for all x \in U
@@ -180,14 +180,14 @@ int main(int argc, char *argv[]) {
             }
             g.update();
 
-            FrontierBasedSearch fbs(g, 1);
+            CycleZdd cycle(g);
             IntRange ZeroOrTwo(0, 2, 2);
             IntRange OnlyTwo(2, 2);
             DegreeConstraint dc(g, &ZeroOrTwo);
             dc.setConstraint("center", &OnlyTwo);
             dd = DdStructure<2>(dc);
             dd.zddReduce();
-            dd.zddSubset(fbs);
+            dd.zddSubset(cycle);
             dd.zddReduce();
 
             val = std::vector<int>(dd.topLevel() + 1, 1);      // v(e) = 1 for all e \in E
