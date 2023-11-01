@@ -118,13 +118,13 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    DdStructure<2> dd;
+    std::vector<int> val;   // val[l] gives the value of the variable at level l; val[0] is not used
+    
     MessageHandler::showMessages();
     MessageHandler mh;
-    mh.begin("Started");
+    mh.begin("ZDD Construction\n");
     try {
-        std::vector<int> val;   // val[l] gives the value of the variable at level l; val[0] is not used
-        DdStructure<2> dd;
-
         // Read ZDD from file
         if (!zddFile.empty()) {
             BDD_Init(1024, 1024 * 1024 * 1024);
@@ -150,7 +150,7 @@ int main(int argc, char *argv[]) {
 
         // Knapsack problem
         else if (opt["knapsack"]) {
-            mh << "\nInput n and w: ";
+            mh << "Input n and w: ";
             int n, w;
             std::cin >> n >> w;
             if (n <= 0 || w < 0) throw std::runtime_error("Invalid inputs");
@@ -207,9 +207,17 @@ int main(int argc, char *argv[]) {
         // Output zdd to STDOUT
         if (opt["zdd"] && dd.size()) dd.dumpDot(std::cout, "ZDD");
         if (opt["export"] && dd.size()) dd.dumpSapporo(std::cout);
+    }
+    catch (std::exception& e) {
+        std::cerr << e.what() << "\n";
+        return 1;
+    }
+    mh.end("finished");
 
-        // Print moments
-        if (opt["moment"]) {
+    // Print moments
+    if (opt["moment"]) {
+        mh.begin("Moments Calculation\n");
+        try{
             std::vector<__int128_t> moments = dd.evaluate(MomentsEval<__int128_t,int>(val, optNum["moment"]));
             mh << "Cardinality = " << static_cast<long long>(moments.front()) << "\n";
             std::map<int,std::string> suffix = {{1,"st"}, {2,"nd"}, {3,"rd"}};
@@ -219,9 +227,17 @@ int main(int argc, char *argv[]) {
                     << static_cast<long double>(moments[n]) / static_cast<long double>(moments.front()) << "\n";
             }
         }
+        catch (std::exception& e) {
+            std::cerr << e.what() << "\n";
+            return 1;
+        }
+        mh.end("finished");
+    }
 
-        // Sort subsets
-        if (opt["sort"]) {
+    // Sort subsets
+    if (opt["sort"]) {
+        mh.begin("Sorting Subsets\n");
+        try {
             // Convert to ZBDD
             BDD_Init(1024, 1024 * 1024 * 1024);
             for (int i = 0; i < dd.topLevel(); ++i) BDD_NewVar();
@@ -229,7 +245,7 @@ int main(int argc, char *argv[]) {
             assert(dd_s.Top() == dd.topLevel());
 
             weighted_iterator<int> it(dd_s, val);
-            for (int i = 1; i <= std::min(optNum["sort"], dd.evaluate(ZddCardinality<int>())); ++i) {
+            for (int i = 1; i <= std::min(static_cast<__int128_t>(optNum["sort"]), dd.evaluate(ZddCardinality<__int128_t>())); ++i) {
                 mh << "Solution #" << i << ", " << "Value = " 
                     << std::fixed << std::setprecision(5) << it.curr_weight();
                 mh << "\nElements: ";
@@ -238,12 +254,12 @@ int main(int argc, char *argv[]) {
                 it.next();
             }
         }
-    }
-    catch (std::exception& e) {
-        std::cerr << e.what() << "\n";
-        return 1;
+        catch (std::exception& e) {
+            std::cerr << e.what() << "\n";
+            return 1;
+        }
+        mh.end("finished");
     }
 
-    mh.end("finished");
     return 0;
 }
