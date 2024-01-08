@@ -1,4 +1,5 @@
 #include <map>
+#include <cmath>
 #include <vector>
 #include <random>
 #include <iomanip>
@@ -57,6 +58,7 @@ std::string options[][2] = { //
         {"graph <n>", "Generate a ZDD representing all undirected paths in a complete graph with <n> vertices"}, //
         {"prune <f>", "Randomly prune each arc with probability <f>"}, //
         {"moment <n>", "Compute the first <n> moments of the family"}, //
+        {"naive", "Use naive method to compute moments of the family"}, //
         {"sort <n>", "Get the first <n> subsets sorted by descending value"}, //
         {"zdd", "Dump resulting ZDD to STDOUT in DOT format"}, //
         {"export", "Dump resulting ZDD to STDOUT"}, //
@@ -218,7 +220,19 @@ int main(int argc, char *argv[]) {
     if (opt["moment"]) {
         mh.begin("Moments Calculation\n");
         try{
-            std::vector<__int128_t> moments = dd.evaluate(MomentsEval<__int128_t,int>(val, optNum["moment"]));
+            std::vector<__int128_t> moments;
+            if (opt["naive"]) {
+                moments = std::vector<__int128_t>(optNum["moment"] + 1, 0);
+                for (auto it = dd.begin(); it != dd.end(); ++it) {
+                    __int128_t set_val = 0;
+                    for (auto x: *it) set_val += val[x];
+                    for (int p = 0; p <= optNum["moment"]; ++p) moments[p] += pow(set_val, p);
+                }
+            }
+            else {
+                moments = dd.evaluate(MomentsEval<__int128_t,int>(val, optNum["moment"]));
+            }
+            
             mh << "Cardinality = " << static_cast<long long>(moments.front()) << "\n";
             std::map<int,std::string> suffix = {{1,"st"}, {2,"nd"}, {3,"rd"}};
             for (int n = 1; n <= optNum["moment"]; ++n) {
